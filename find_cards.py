@@ -5,7 +5,7 @@ def get_card_imgs(frame, num_cards):
     # Start of code from: https://arnab.org/blog/so-i-suck-24-automating-card-games-using-opencv-and-python/
     gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray,(1,1),1000)
-    flag, thresh = cv2.threshold(blur, 120, 255, cv2.THRESH_BINARY)
+    flag, thresh = cv2.threshold(blur, 120, 255, cv2.THRESH_OTSU)
 
     # Contours are sets of corner coordinates
     contours, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
@@ -47,7 +47,7 @@ def crop(original_image, contour):
     x,y,w,h = cv2.boundingRect(contour)
 
     # Return only the content inside of the bounding box
-    cropped = masked_img[y-50:y+h+50, x-50:x+w+50]
+    cropped = masked_img[y+15:y+h-15, x+15:x+w-15]
     return cropped
 
 
