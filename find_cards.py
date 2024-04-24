@@ -2,6 +2,11 @@ import cv2
 import numpy as np 
 
 def get_card_imgs(frame, num_cards):
+    """
+    INFO HERE
+    :param [parameters]: 1D List of [R,G,B] values for each pixel
+    :return: 
+    """
     # Start of code from: https://arnab.org/blog/so-i-suck-24-automating-card-games-using-opencv-and-python/
     gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray,(1,1),1000)
@@ -11,6 +16,7 @@ def get_card_imgs(frame, num_cards):
     contours, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     contours = sorted(contours, key=cv2.contourArea,reverse=True)[:num_cards]
     # End of code from: https://arnab.org/blog/so-i-suck-24-automating-card-games-using-opencv-and-python/
+
     approx = []
     for contour in contours:
         peri = cv2.arcLength(contour, True)
@@ -32,16 +38,22 @@ def get_card_imgs(frame, num_cards):
     return individual_card_images
 
 def crop(original_image, contour):
+    """
+    INFO HERE
+    :param [parameters]: 1D List of [R,G,B] values for each pixel
+    :return: 
+    """
     # Mask
+    # Start of code from: https://www.youtube.com/watch?v=f6VgWTD_7kc
     mask = np.zeros((original_image.shape[0], original_image.shape[1]), dtype="uint8")
     final_mask = cv2.drawContours(mask, [contour], -1, (255,255,255), -1)
     masked_img = cv2.bitwise_and(original_image, original_image, mask=final_mask)
+    # End of code from: https://www.youtube.com/watch?v=f6VgWTD_7kc
 
     # Changed masked part (all black pixels) to be white
     hsv = cv2.cvtColor(masked_img,cv2.COLOR_BGR2HSV)
     black_pixels = cv2.inRange(hsv,np.array([0,0,0]),np.array([0,0,0]))
     masked_img[black_pixels>0] = (255,255,255)
-
 
     # Find bounding box
     x,y,w,h = cv2.boundingRect(contour)
@@ -52,6 +64,11 @@ def crop(original_image, contour):
 
 
 def show_cards(individual_card_images):
+    """
+    INFO HERE
+    :param [parameters]: 1D List of [R,G,B] values for each pixel
+    :return: 
+    """
     for i in range(len(individual_card_images)):
         cv2.imshow(f"Card {i+1}", individual_card_images[i])
 
