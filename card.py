@@ -21,7 +21,7 @@ class Card:
     def get_shape_contours(self, card):
         """
         INFO HERE
-        :param [parameters]: 1D List of [R,G,B] values for each pixel
+        :param [parameters]:
         :return: 
         """
         gray = cv2.cvtColor(card,cv2.COLOR_BGR2GRAY)
@@ -48,7 +48,7 @@ class Card:
     def get_shape_type(self, image_shape):
         """
         INFO HERE
-        :param [parameters]: 1D List of [R,G,B] values for each pixel
+        :param [parameters]:
         :return: 
         """
         shapes = ["diamond", "oval", "wave"]
@@ -73,7 +73,7 @@ class Card:
     def compress (self, img):
         """
         INFO HERE
-        :param [parameters]: 1D List of [R,G,B] values for each pixel
+        :param [parameters]:
         :return: 
         """
         # https://docs.opencv.org/3.4/d1/d5c/tutorial_py_kmeans_opencv.html
@@ -81,9 +81,9 @@ class Card:
         # convert to np.float32
         Z = np.float32(Z)
         # define criteria, number of clusters(K) and apply kmeans()
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 2, 1.0)
         K = 2
-        ret,label,center=cv2.kmeans(Z,K,None,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
+        ret,label,center=cv2.kmeans(Z,K,None,criteria,2,cv2.KMEANS_RANDOM_CENTERS)
         # Now convert back into uint8, and make original image
         center = np.uint8(center)
         res = center[label.flatten()]
@@ -94,10 +94,13 @@ class Card:
     def get_color(self):
         # Ask if it is BGR
         unique_colors = np.unique(self.card_img.reshape(-1,3), axis=0)
+
+        # BGR
         red = (48, 62, 147)
         green = (46, 78, 23)
         purple = (84, 33, 54)
-        white = (0,0,0)
+        white = (255,255,255)
+
         for color in unique_colors:
             matches = {}
             matches["red"] = self.color_comparison_score(red, color)
@@ -108,56 +111,46 @@ class Card:
             # print("purple: " + str(matches["purple"]) + " green: " + str(matches["green"]))
             print(color)
             if best_match != matches["white"]:
-                if best_match == matches["red"]:
-                    return "red"
-                elif best_match == matches["green"]:
-                    return "green"
-                elif best_match == matches["purple"]:
-                    return "purple"
-
+                    red_ratio = float(color[2]) / float(color[0] + color[1] + color[2])
+                    blue_ratio = float(color[0]) / float(color[0] + color[1] + color[2])
+                    green_ratio = float(color[1]) / float(color[0] + color[1] + color[2])
+                    if green_ratio > red_ratio and green_ratio > blue_ratio:
+                        return "green"
+                    if red_ratio > blue_ratio * 1.25:
+                        return "red"
+                    else:
+                        return "purple"
 
 
     def color_comparison_score(self, pixel1, pixel2):
-        red_diff = abs(pixel1[0] - pixel2[0])
+        blue_diff = abs(pixel1[0] - pixel2[0])
         green_diff = abs(pixel1[1]- pixel2[1])
-        blue_diff = abs(pixel1[2] - pixel2[2])
+        red_diff = abs(pixel1[2] - pixel2[2])
 
         return red_diff + green_diff + blue_diff
             
         
 
 video = cv2.VideoCapture(0)
+frame = video.read()[1]
+frame_count = 0
 while True:
-    frame = video.read()[1]
-    # frame = cv2.imread("cards/3_diamond_blank.jpg")
-    card_imgs = find_cards.get_card_imgs(frame, 1)
-    if len(card_imgs) > 0:
-        card = Card(card_imgs[0])
-        print(card.count)
-        print(card.shape)
-        print(card.color)
-# while True:
-        cv2.drawContours(card.card_img, card.shape_contours, -1, (0,255,0), 3)
-        cv2.imshow("Hello", card.card_img)
-    # frame = video.read()[1]
-    # # frame = cv2.imread("cards/testing.jpg")
-    # card_imgs = find_cards.get_card_imgs(frame, 2)
-    # # try:
-    # #     card_identify.show_cards(card_imgs)
-    # # except:
-    # #     print("bad_image")
-    # cv2.imshow("og", frame)
-    # if len(card_imgs) > 0:
-    #     # frame = cv2.imread("cards/2_oval_line.jpg")
-    #     try:
-    #         card = Card(card_imgs[0])
-    #         print(card.count)
-    #         print(card.shape)
-    #     except:
-    #         print("bad")
-    #         #  cv2.imshow("failed", card_imgs[0])
+    key = cv2.waitKey(60) & 0xFF
+    if key == ord('r'):
+        frame = video.read()[1]
+        card_imgs = find_cards.get_card_imgs(frame, 1)
+        if len(card_imgs) > 0:
+            card = Card(card_imgs[0])
+            print(card.count)
+            print(card.shape)
+            print(card.color)
+            cv2.drawContours(card.card_img, card.shape_contours, -1, (0,255,0), 5)
+            frame = card.card_img
+        
+    
+    cv2.imshow("Game", frame)
 
-    if cv2.waitKey(60) & 0xFF == ord('q'):
+    if key == ord('q'):
             break
     
 
