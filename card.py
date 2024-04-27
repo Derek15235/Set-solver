@@ -9,8 +9,9 @@ class Card:
     def __init__(self, card_img):
         self.img_size = card_img.shape
 
-        self.card_img = self.compress(card_img)
+        self.card_img = card_img
         self.shape_contours = self.get_shape_contours(self.card_img)
+        self.shape_img = self.compress(self.make_shape_img(card_img, self.shape_contours[0]))
 
         self.count = len(self.shape_contours)
         self.shape = self.get_shape_type(self.shape_contours[0])
@@ -34,6 +35,7 @@ class Card:
         # Contours are sets of corner coordinates
         contours, hierarchy = cv2.findContours(thresh,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
         contours = sorted(contours, key=cv2.contourArea,reverse=True)[:3]
+
 
         # Make sure all shapes are of similar areas, getting rid of small areas found
         final_shapes = [contours[0]]
@@ -91,9 +93,42 @@ class Card:
 
         return res2
     
+    def make_shape_img(self, og_image, shape_contour):
+        # From: https://jdhao.github.io/2019/02/23/crop_rotated_rectangle_opencv/
+        # rotate img
+        rect = cv2.minAreaRect(shape_contour)
+        box = cv2.boxPoints(rect)
+        box = np.int0(box)
+
+        cv2.drawContours(og_image, [box], 0, (255, 255, 255), 0)
+
+        # get width and height of the detected rectangle
+        width = int(rect[1][0])
+        height = int(rect[1][1])
+
+        src_pts = box.astype("float32")
+        # coordinate of the points in box points after the rectangle has been
+        # straightened
+        dst_pts = np.array([[0, height-1],
+                            [0, 0],
+                            [width-1, 0],
+                            [width-1, height-1]], dtype="float32")
+
+        # the perspective transformation matrix
+        M = cv2.getPerspectiveTransform(src_pts, dst_pts)
+
+        # directly warp the rotated rectangle to get the straightened rectangle
+        warped = cv2.warpPerspective(og_image, M, (width, height))
+
+        warped = cv2.resize(warped, (500,300))
+
+        return warped
+
+
+    
     def get_color(self):
         # Ask if it is BGR
-        unique_colors = np.unique(self.card_img.reshape(-1,3), axis=0)
+        unique_colors = np.unique(self.shape_img.reshape(-1,3), axis=0)
 
         # BGR
         red = (48, 62, 147)
@@ -109,7 +144,6 @@ class Card:
             matches["white"] = self.color_comparison_score(white, color)
             best_match = min([matches["red"], matches["green"], matches["purple"], matches["white"]])
             # print("purple: " + str(matches["purple"]) + " green: " + str(matches["green"]))
-            print(color)
             if best_match != matches["white"]:
                     red_ratio = float(color[2]) / float(color[0] + color[1] + color[2])
                     blue_ratio = float(color[0]) / float(color[0] + color[1] + color[2])
@@ -129,30 +163,42 @@ class Card:
 
         return red_diff + green_diff + blue_diff
             
+    
         
 
-video = cv2.VideoCapture(0)
-frame = video.read()[1]
-frame_count = 0
+# video = cv2.VideoCapture(0)
+# frame = video.read()[1]
+# frame_count = 0
+# while True:
+#     key = cv2.waitKey(60) & 0xFF
+#     if key == ord('r'):
+#         frame = video.read()[1]
+#         card_imgs = find_cards.get_card_imgs(frame, 1)
+#         if len(card_imgs) > 0:
+#             card = Card(card_imgs[0])
+#             print(card.count)
+#             print(card.shape)
+#             print(card.color)
+#             cv2.drawContours(card.card_img, card.shape_contours, -1, (0,255,0), 5)
+#             frame = card.card_img
+        
+    
+#     cv2.imshow("Game", frame)
+
+#     if key == ord('q'):
+#             break
+    
+frame = cv2.imread("cards/2_wave_line.jpg")
+card = Card(frame)
+print(card.count)
+print(card.shape)
+print(card.color)
+
 while True:
-    key = cv2.waitKey(60) & 0xFF
-    if key == ord('r'):
-        frame = video.read()[1]
-        card_imgs = find_cards.get_card_imgs(frame, 1)
-        if len(card_imgs) > 0:
-            card = Card(card_imgs[0])
-            print(card.count)
-            print(card.shape)
-            print(card.color)
-            cv2.drawContours(card.card_img, card.shape_contours, -1, (0,255,0), 5)
-            frame = card.card_img
-        
-    
-    cv2.imshow("Game", frame)
+    cv2.imshow("Hi", card.shape_img)
+    if cv2.waitKey(60) & 0xFF == ord('q'):
+        break
 
-    if key == ord('q'):
-            break
-    
 
     
     
