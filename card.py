@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from sklearn.cluster import KMeans
-import find_cards
 
 class Card:
     def __init__(self, card_img):
@@ -127,7 +126,7 @@ class Card:
 
 
     
-    def getq_color(self):
+    def get_color(self):
         unique_colors, self.counts = np.unique(self.shape_img.reshape(-1,3), axis=0, return_counts=True)
 
         # The first color in the set is the card's color
@@ -155,57 +154,6 @@ class Card:
             return "line"
         else:
             return "blank"
-        
-        
-    
-
-    
-
-
-            
-    
-        
-
-video = cv2.VideoCapture(0)
-frame = video.read()[1]
-frame_count = 0
-while True:
-    key = cv2.waitKey(60) & 0xFF
-    if key == ord('r'):
-        frame = video.read()[1]
-
-        card_imgs = find_cards.get_card_imgs(frame, 3)
-        frame_contours = find_cards.get_contours(frame, 12)[:len(card_imgs)]
-
-        cv2.drawContours(frame, frame_contours, -1, (0,255,0), 5)
-
-        for i in range(len(card_imgs)):
-            card = Card(card_imgs[i])
-            print(f"Card {i+1}")
-            print(card.count)
-            print(card.shape)
-            print(card.color)
-            print(card.fill)
-            frame = card.shape_img
-            
-        
-    
-    cv2.imshow("Game", frame)
-
-    if key == ord('q'):
-            break
-    
-# frame = cv2.imread("cards/2_oval_line.jpg")
-# card = Card(frame)
-# print(card.count)
-# print(card.shape)
-# print(card.color)
-
-# while True:
-#     cv2.imshow("Hi", card.shape_img)
-#     if cv2.waitKey(60) & 0xFF == ord('q'):
-#         break
-
 
     
     
