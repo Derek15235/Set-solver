@@ -148,20 +148,36 @@ class Card:
         gray = cv2.cvtColor(self.shape_img,cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray,(1,1),1000)
         flag, thresh = cv2.threshold(blur, 120, 255, cv2.THRESH_OTSU)
-        self.shape_img = thresh
+
+        # Crop
+        w = 100
+        h = 100
+        y = int(thresh.shape[0]/2 - h/2)
+        x = int(thresh.shape[1]/2 - w/2)
+        cropped = thresh[y:y+h, x:x+w]
+
+        self.shape_img = cropped
+
         # Counting black and white pixels then finding proportion of black
-        unique_colors, counts = np.unique(thresh.reshape(-1,3), axis=0, return_counts=True)
-        black_proportion = float(counts[0]) / float(thresh.shape[0] * thresh.shape[1])
-
-        print(unique_colors)
-        print(black_proportion)
-
-        if black_proportion <= .06:
-            return "blank"
-        elif black_proportion <= .15:
-            return "line"
+        unique_colors, counts = np.unique(cropped.reshape(-1,1), axis=0, return_counts=True)
+        if len(unique_colors) == 1:
+            if unique_colors[0][0] == 255:
+                return "blank"
+            else:
+                return "solid"
         else:
-            return "solid"
+            return "line"
+        # black_proportion = float(counts[0]) / float(cropped.shape[0] * cropped.shape[1])
+
+        # print(unique_colors)
+        # print(black_proportion)
+
+        # if black_proportion <= .05:
+        #     return "blank"
+        # elif black_proportion <= .15:
+        #     return "line"
+        # else:
+        #     return "solid"
     
     def __str__(self):
         return str(self.count) + " " + self.color + " " + self.shape + " " + str(self.fill)
