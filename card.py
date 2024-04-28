@@ -16,6 +16,7 @@ class Card:
         self.count = len(self.shape_contours)
         self.shape = self.get_shape_type(self.shape_contours[0])
         self.color = self.get_color()
+        self. fill = self.get_fill()
 
         
 
@@ -83,9 +84,9 @@ class Card:
         # convert to np.float32
         Z = np.float32(Z)
         # define criteria, number of clusters(K) and apply kmeans()
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 2, 1.0)
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 5, 1.0)
         K = 2
-        ret,label,center=cv2.kmeans(Z,K,None,criteria,2,cv2.KMEANS_RANDOM_CENTERS)
+        ret,label,center=cv2.kmeans(Z,K,None,criteria,5,cv2.KMEANS_RANDOM_CENTERS)
         # Now convert back into uint8, and make original image
         center = np.uint8(center)
         res = center[label.flatten()]
@@ -126,78 +127,84 @@ class Card:
 
 
     
-    def get_color(self):
-        # Ask if it is BGR
-        unique_colors = np.unique(self.shape_img.reshape(-1,3), axis=0)
+    def getq_color(self):
+        unique_colors, self.counts = np.unique(self.shape_img.reshape(-1,3), axis=0, return_counts=True)
 
-        # BGR
-        red = (48, 62, 147)
-        green = (46, 78, 23)
-        purple = (84, 33, 54)
-        white = (255,255,255)
+        # The first color in the set is the card's color
+        self.BGR_color = unique_colors[0]
 
-        for color in unique_colors:
-            matches = {}
-            matches["red"] = self.color_comparison_score(red, color)
-            matches["green"] = self.color_comparison_score(green, color)
-            matches["purple"] = self.color_comparison_score(purple, color)
-            matches["white"] = self.color_comparison_score(white, color)
-            best_match = min([matches["red"], matches["green"], matches["purple"], matches["white"]])
-            # print("purple: " + str(matches["purple"]) + " green: " + str(matches["green"]))
-            if best_match != matches["white"]:
-                    red_ratio = float(color[2]) / float(color[0] + color[1] + color[2])
-                    blue_ratio = float(color[0]) / float(color[0] + color[1] + color[2])
-                    green_ratio = float(color[1]) / float(color[0] + color[1] + color[2])
-                    if green_ratio > red_ratio and green_ratio > blue_ratio:
-                        return "green"
-                    if red_ratio > blue_ratio * 1.25:
-                        return "red"
-                    else:
-                        return "purple"
+        red_ratio = float(self.BGR_color[2]) / float(self.BGR_color[0] + self.BGR_color[1] + self.BGR_color[2])
+        blue_ratio = float(self.BGR_color[0]) / float(self.BGR_color[0] + self.BGR_color[1] + self.BGR_color[2])
+        green_ratio = float(self.BGR_color[1]) / float(self.BGR_color[0] + self.BGR_color[1] + self.BGR_color[2])
+        if green_ratio > red_ratio and green_ratio > blue_ratio:
+            return "green"
+        if red_ratio > blue_ratio * 1.25:
+            return "red"
+        else:
+            return "purple"
+        
+    def get_fill(self):
+        color_count = self.counts[0]
+        white_count = self.counts[1]
+
+        color_proportion = float(color_count) / float(color_count + white_count)
+
+        if color_proportion >= 0.5:
+            return "solid"
+        elif color_proportion >= 0.2:
+            return "line"
+        else:
+            return "blank"
+        
+        
+    
+
+    
 
 
-    def color_comparison_score(self, pixel1, pixel2):
-        blue_diff = abs(pixel1[0] - pixel2[0])
-        green_diff = abs(pixel1[1]- pixel2[1])
-        red_diff = abs(pixel1[2] - pixel2[2])
-
-        return red_diff + green_diff + blue_diff
             
     
         
 
-# video = cv2.VideoCapture(0)
-# frame = video.read()[1]
-# frame_count = 0
-# while True:
-#     key = cv2.waitKey(60) & 0xFF
-#     if key == ord('r'):
-#         frame = video.read()[1]
-#         card_imgs = find_cards.get_card_imgs(frame, 1)
-#         if len(card_imgs) > 0:
-#             card = Card(card_imgs[0])
-#             print(card.count)
-#             print(card.shape)
-#             print(card.color)
-#             cv2.drawContours(card.card_img, card.shape_contours, -1, (0,255,0), 5)
-#             frame = card.card_img
+video = cv2.VideoCapture(0)
+frame = video.read()[1]
+frame_count = 0
+while True:
+    key = cv2.waitKey(60) & 0xFF
+    if key == ord('r'):
+        frame = video.read()[1]
+
+        card_imgs = find_cards.get_card_imgs(frame, 3)
+        frame_contours = find_cards.get_contours(frame, 12)[:len(card_imgs)]
+
+        cv2.drawContours(frame, frame_contours, -1, (0,255,0), 5)
+
+        for i in range(len(card_imgs)):
+            card = Card(card_imgs[i])
+            print(f"Card {i+1}")
+            print(card.count)
+            print(card.shape)
+            print(card.color)
+            print(card.fill)
+            frame = card.shape_img
+            
         
     
-#     cv2.imshow("Game", frame)
+    cv2.imshow("Game", frame)
 
-#     if key == ord('q'):
-#             break
+    if key == ord('q'):
+            break
     
-frame = cv2.imread("cards/2_wave_line.jpg")
-card = Card(frame)
-print(card.count)
-print(card.shape)
-print(card.color)
+# frame = cv2.imread("cards/2_oval_line.jpg")
+# card = Card(frame)
+# print(card.count)
+# print(card.shape)
+# print(card.color)
 
-while True:
-    cv2.imshow("Hi", card.shape_img)
-    if cv2.waitKey(60) & 0xFF == ord('q'):
-        break
+# while True:
+#     cv2.imshow("Hi", card.shape_img)
+#     if cv2.waitKey(60) & 0xFF == ord('q'):
+#         break
 
 
     
