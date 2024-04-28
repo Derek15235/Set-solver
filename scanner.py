@@ -2,13 +2,12 @@ import cv2
 import numpy as np 
 from card import Card
 
-class Game:
-    def __init__(self, video, num_cards=12):
-        self.video = video
+class Scanner:
+    def __init__(self, frame, num_cards=12):
         self.num_cards = num_cards
-        self.frame = self.video.read()[1]
+        self.frame = frame
 
-    def get_contours(self):
+    def get_card_contours(self):
         # Start of code from: https://arnab.org/blog/so-i-suck-24-automating-card-games-using-opencv-and-python/
         gray = cv2.cvtColor(self.frame,cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray,(1,1),1000)
@@ -22,7 +21,9 @@ class Game:
         approx = []
         for contour in contours:
             peri = cv2.arcLength(contour, True)
-            approx.append(cv2.approxPolyDP(contour, .1 * peri, True))
+            approximation = cv2.approxPolyDP(contour, .1 * peri, True)
+            if len(approximation) == 4 and cv2.contourArea(approximation) > 2000:
+                approx.append(approximation)  
 
         return approx
 
@@ -32,22 +33,16 @@ class Game:
         :param [parameters]: 1D List of [R,G,B] values for each pixel
         :return: 
         """
-        approx = self.get_contours()
+        approx = self.get_card_contours()
 
         individual_card_images = []
 
         # Make a new image of everything masked except the individual cards
         for i in range(len(approx)):
-            # Make sure rectangular and aren't too small
-            if len(approx[i]) == 4 and cv2.contourArea(approx[i]) > 2000:
-                # mask = np.zeros((frame.shape[0], frame.shape[1]), dtype="uint8")
-                # final_mask = cv2.drawContours(mask, [approx[i]], -1, (255,255,255), -1)
-                if i < len(individual_card_images) - 1:
-                    # individual_card_images[i] = cv2.bitwise_and(frame, frame, mask=final_mask)
-                    individual_card_images[i] = self.crop(self.frame, approx[i])
-                else:
-                    # individual_card_images.append(cv2.bitwise_and(frame, frame, mask=final_mask))
-                    individual_card_images.append(self.crop(self.frame, approx[i]))
+            if i < len(individual_card_images) - 1:
+                individual_card_images[i] = self.crop(self.frame, approx[i])
+            else:
+                individual_card_images.append(self.crop(self.frame, approx[i]))
         
         return individual_card_images
 
@@ -76,35 +71,37 @@ class Game:
         cropped = masked_img[y+15:y+h-15, x+15:x+w-15]
         return cropped
     
-    def run(self):
-        while True:
-            key = cv2.waitKey(60) & 0xFF
-            if key == ord('r'):
-                self.frame = self.video.read()[1]
+  
 
-                card_imgs = self.get_card_imgs()
-                frame_contours = self.get_contours()[:len(card_imgs)]
 
-                cv2.drawContours(self.frame, frame_contours, -1, (0,255,0), 5)
+video = cv2.VideoCapture(0)
+frame = video.read()[1]
 
-                for i in range(len(card_imgs)):
-                    card = Card(card_imgs[i])
-                    print(f"Card {i+1}")
-                    print(card.count)
-                    print(card.shape)
-                    print(card.color)
-                    print(card.fill)
+while True:
+    key = cv2.waitKey(60) & 0xFF
+    if key == ord('r'):
+        frame = video.read()[1]
+        scanner = Scanner(frame)
+
+        card_imgs = scanner.get_card_imgs()
+        card_contours = scanner.get_card_contours()[:len(card_imgs)]
+
+        cv2.drawContours(frame, card_contours, -1, (0,255,0), 5)
+
+        for i in range(len(card_imgs)):
+            card = Card(card_imgs[i])
+            x,y,w,h = cv2.boundingRect(card_contours[i])
+            cv2.putText(frame, str(card), (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+            # frame = card.shape_img
+
+    cv2.imshow("Game", frame)
+
+    if key == ord('q'):
+            break
     
-            cv2.imshow("Game", self.frame)
 
-            if key == ord('q'):
-                    break
                     
     
  
 
 
-video = cv2.VideoCapture(0)
-frame = video.read()[1]
-game = Game(video)
-game.run()
