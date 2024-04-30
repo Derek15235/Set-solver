@@ -1,11 +1,9 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-from sklearn.cluster import KMeans
 
 class Card:
-    def __init__(self, card_img):
+    def __init__(self, card_img, contour):
+        self.contour = contour
         self.img_size = card_img.shape
 
         self.card_img = card_img
@@ -49,11 +47,11 @@ class Card:
 
     def get_shape_type(self, image_shape):
         """
-        INFO HERE
-        :param [parameters]:
+        Takes in the cropped shape image and compares it to each of the three shapes
+        :param [image_shape]: 
         :return: 
         """
-        shapes = ["diamond", "oval", "wave"]
+        shapes = ["Diamond", "Oval", "Wave"]
         shape_contours = {}
 
         for shape in shapes:
@@ -78,7 +76,7 @@ class Card:
         :param [parameters]:
         :return: 
         """
-        # https://docs.opencv.org/3.4/d1/d5c/tutorial_py_kmeans_opencv.html
+        # Start of code from: https://docs.opencv.org/3.4/d1/d5c/tutorial_py_kmeans_opencv.html
         Z = img.reshape((-1,3))
         # convert to np.float32
         Z = np.float32(Z)
@@ -90,11 +88,12 @@ class Card:
         center = np.uint8(center)
         res = center[label.flatten()]
         res2 = res.reshape((img.shape))
+        # End of code from: https://docs.opencv.org/3.4/d1/d5c/tutorial_py_kmeans_opencv.html
 
         return res2
     
     def make_shape_img(self, og_image, shape_contour):
-        # From: https://jdhao.github.io/2019/02/23/crop_rotated_rectangle_opencv/
+        # Start of code from: https://jdhao.github.io/2019/02/23/crop_rotated_rectangle_opencv/
         # rotate img
         rect = cv2.minAreaRect(shape_contour)
         box = cv2.boxPoints(rect)
@@ -119,6 +118,7 @@ class Card:
 
         # directly warp the rotated rectangle to get the straightened rectangle
         warped = cv2.warpPerspective(og_image, M, (width, height))
+        # End of code from: https://jdhao.github.io/2019/02/23/crop_rotated_rectangle_opencv/
 
         warped = cv2.resize(warped, (500,300))
 
@@ -130,18 +130,17 @@ class Card:
         simple_shape = self.compress(self.shape_img)
         unique_colors = np.unique(simple_shape.reshape(-1,3), axis=0)
 
+        BGR_color = unique_colors[0]
 
-        self.BGR_color = unique_colors[0]
-
-        red_ratio = float(self.BGR_color[2]) / float(self.BGR_color[0] + self.BGR_color[1] + self.BGR_color[2])
-        blue_ratio = float(self.BGR_color[0]) / float(self.BGR_color[0] + self.BGR_color[1] + self.BGR_color[2])
-        green_ratio = float(self.BGR_color[1]) / float(self.BGR_color[0] + self.BGR_color[1] + self.BGR_color[2])
+        red_ratio = float(BGR_color[2]) / float(BGR_color[0] + BGR_color[1] + BGR_color[2])
+        blue_ratio = float(BGR_color[0]) / float(BGR_color[0] + BGR_color[1] + BGR_color[2])
+        green_ratio = float(BGR_color[1]) / float(BGR_color[0] + BGR_color[1] + BGR_color[2])
         if green_ratio > red_ratio and green_ratio > blue_ratio:
-            return "green"
+            return "Green"
         if red_ratio > blue_ratio * 1.25:
-            return "red"
+            return "Red"
         else:
-            return "purple"
+            return "Purple"
 
         
     def get_fill(self):
@@ -156,28 +155,15 @@ class Card:
         x = int(thresh.shape[1]/2 - w/2)
         cropped = thresh[y:y+h, x:x+w]
 
-        self.shape_img = cropped
-
         # Counting black and white pixels then finding proportion of black
-        unique_colors, counts = np.unique(cropped.reshape(-1,1), axis=0, return_counts=True)
+        unique_colors = np.unique(cropped.reshape(-1,1), axis=0)
         if len(unique_colors) == 1:
             if unique_colors[0][0] == 255:
-                return "blank"
+                return "Empty"
             else:
-                return "solid"
+                return "Solid"
         else:
-            return "line"
-        # black_proportion = float(counts[0]) / float(cropped.shape[0] * cropped.shape[1])
-
-        # print(unique_colors)
-        # print(black_proportion)
-
-        # if black_proportion <= .05:
-        #     return "blank"
-        # elif black_proportion <= .15:
-        #     return "line"
-        # else:
-        #     return "solid"
+            return "Striped"
     
     def __str__(self):
         return str(self.count) + " " + self.color + " " + self.shape + " " + str(self.fill)

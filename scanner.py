@@ -74,33 +74,7 @@ class Scanner:
   
 
 
-video = cv2.VideoCapture(0)
-frame = video.read()[1]
-# frame = cv2.imread("cards/testing.jpg")
 
-while True:
-    key = cv2.waitKey(60) & 0xFF
-    if key == ord('r'):
-        frame = video.read()[1]
-        scanner = Scanner(frame)
-
-        card_imgs = scanner.get_card_imgs()
-        card_contours = scanner.get_card_contours()[:len(card_imgs)]
-
-        cv2.drawContours(frame, card_contours, -1, (0,255,0), 5)
-
-        for i in range(len(card_imgs)):
-            card = Card(card_imgs[i])
-            x,y,w,h = cv2.boundingRect(card_contours[i])
-            cv2.putText(frame, str(card), (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
-            print(card.fill)
-            # frame = card.shape_img
-
-    cv2.imshow("Game", frame)
-
-    if key == ord('q'):
-            break
-    
 
                     
     
