@@ -26,7 +26,7 @@ class Game:
                     numbers = [1, 2, 3]
                     numbers.remove(self.cards[i].count)
                     numbers.remove(self.cards[j].count)
-                    needed_number = numbers[0] 
+                    needed_count = numbers[0] 
 
                 # Find needed fill
                 if self.cards[i].fill == self.cards[j].fill:
@@ -42,13 +42,16 @@ class Game:
                     needed_color = self.cards[i].color
                 else:
                     colors = ["Red", "Purple", "Green"]
-                    shapes.remove(self.cards[i].color)
-                    shapes.remove(self.cards[j].color)
+                    colors.remove(self.cards[i].color)
+                    colors.remove(self.cards[j].color)
                     needed_color = colors[0]
 
 
                 for card in self.cards:
                     if card.shape == needed_shape and card.count == needed_count and card.fill == needed_fill and card.color == needed_color:
+                        print(self.cards[i])
+                        print(self.cards[j])
+                        print(card)
                         return [self.cards[i], self.cards[j], card]
         return "No Set Found"
 
@@ -70,20 +73,19 @@ class Game:
 
                 card_imgs = scanner.get_card_imgs()
                 card_contours = scanner.get_card_contours()[:len(card_imgs)]
-
-                cv2.drawContours(frame, card_contours, -1, (0,255,0), 5)
                 self.cards = []
 
                 for i in range(len(card_imgs)):
                     card = Card(card_imgs[i],card_contours[i])
                     self.cards.append(card)
-
+                # Find time here
                 set = self.find_set()
                 if set == "No Set Found":
                     print("Nope")
                 else:
                     for card in set:
                         x,y,w,h = cv2.boundingRect(card.contour)
+                        cv2.drawContours(frame, [card.contour], -1, (0,255,0), 5)
                         cv2.putText(frame, str(card), (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
                     
 
@@ -93,5 +95,5 @@ class Game:
                     break
 
 if __name__ == '__main__':
-    game = Game(1)
+    game = Game()
     game.run()
