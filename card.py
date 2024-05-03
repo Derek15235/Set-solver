@@ -59,7 +59,7 @@ class Card:
             shape_contours[shape] = self.get_shape_contours(shape_img)[0]
 
         best_match = .2
-        best_shape = "No Match"
+        best_shape = "Diamond"
 
         for shape in shape_contours:
             match_score = cv2.matchShapes(image_shape, shape_contours[shape], 1, 0.0)
@@ -155,15 +155,40 @@ class Card:
         x = int(thresh.shape[1]/2 - w/2)
         cropped = thresh[y:y+h, x:x+w]
 
+
         # Counting black and white pixels then finding proportion of black
         unique_colors = np.unique(cropped.reshape(-1,1), axis=0)
+        
         if len(unique_colors) == 1:
             if unique_colors[0][0] == 255:
-                return "Empty"
+                # Double check to make sure actually empty, not striped
+                # Crop shape image (no augments)
+                w = 100
+                h = 100
+                y = int(self.shape_img.shape[0]/2 - h/2)
+                x = int(self.shape_img.shape[1]/2 - w/2)
+                cropped = self.shape_img[y:y+h, x:x+w]
+
+                # Take sample out of the white part of the card
+                white_corner = self.card_img[0:100, 0:100]
+                mean_white = np.average(white_corner, axis=(0,1))
+                mean_fill = np.average(cropped, axis=(0,1))
+                print(self.color_difference(mean_white, mean_fill))
+                if self.color_difference(mean_white, mean_fill) > 20:
+                    return "Striped"
+                else:
+                    return "Empty"
             else:
                 return "Solid"
         else:
             return "Striped"
+        
+    def color_difference(self, color1, color2):
+        blue_diff = abs(color1[0] - color2[0])
+        green_diff = abs(color1[1] - color2[1])
+        red_diff = abs(color1[2] - color2[2])
+
+        return blue_diff + green_diff + red_diff
     
     def __str__(self):
         return str(self.count) + " " + self.color + " " + self.shape + " " + str(self.fill)

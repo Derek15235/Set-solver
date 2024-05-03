@@ -82,17 +82,17 @@ class Game:
                 for i in range(len(card_imgs)):
                     card = Card(card_imgs[i],card_contours[i])
                     self.cards.append(card)
-                # Find time here
+                    cv2.drawContours(frame, [card.contour], -1, (0,255,0), 5)
+                    print(card)
+
                 sets = self.find_sets()
                 if len(sets) == 0:
                     print("No Sets Found")
                 else:
-                    colors = [(255,0,0), (0,255,0), (0,0,255), (0, 0, 0), (255,255,255)]
                     for i in range(len(sets)):
                         for card in sets[i]:
                             x,y,w,h = cv2.boundingRect(card.contour)
-                            cv2.drawContours(frame, [card.contour], -1, colors[i], 5)
-                            cv2.putText(frame, f"Set {i} " + str(card), (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 1, colors[i], 2)
+                            cv2.putText(frame, 6*i*" " + f"Set {i+1} ", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
             cv2.imshow("Game", frame)
 
             if key == ord('q'):

@@ -15,7 +15,7 @@ class Scanner:
 
         # Contours are sets of corner coordinates
         contours, hierarchy = cv2.findContours(thresh,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-        contours = sorted(contours, key=cv2.contourArea,reverse=True)[:self.num_cards]
+        contours = sorted(contours, key=cv2.contourArea,reverse=True)[:self.num_cards+1]
         # End of code from: https://arnab.org/blog/so-i-suck-24-automating-card-games-using-opencv-and-python/
 
         approx = []
@@ -68,7 +68,7 @@ class Scanner:
         x,y,w,h = cv2.boundingRect(contour)
 
         # Return only the content inside of the bounding box
-        cropped = masked_img[y+15:y+h-15, x+15:x+w-15]
+        cropped = masked_img[y:y+h, x:x+w]
         return cropped
     
   
