@@ -6,8 +6,7 @@ class Game:
     def __init__(self, mode=0):
         self.mode = mode
 
-    def find_sets(self):
-        sets = []
+    def find_set(self):
         for i in range(len(self.cards)):
             for j in range (i+1, len(self.cards)):
                 # Find needed shape
@@ -46,18 +45,10 @@ class Game:
                     colors.remove(self.cards[j].color)
                     needed_color = colors[0]
 
-
                 for card in self.cards:
                     if card.shape == needed_shape and card.count == needed_count and card.fill == needed_fill and card.color == needed_color:
-                        new_set = [self.cards[i], self.cards[j], card]
-                        alread_found = False
-                        if len(sets) > 0:
-                            for i in range(len(sets)):
-                                if set(new_set) == set(sets[i]):
-                                    alread_found = True
-                        if not alread_found:
-                            sets.append(new_set)
-        return sets
+                        return [self.cards[i], self.cards[j], card]
+        return []
 
     def run(self):
         if self.mode == 0:
@@ -82,17 +73,18 @@ class Game:
                 for i in range(len(card_imgs)):
                     card = Card(card_imgs[i],card_contours[i])
                     self.cards.append(card)
-                    cv2.drawContours(frame, [card.contour], -1, (0,255,0), 5)
+                    cv2.drawContours(frame, [card.contour], -1, (0,0,255), 5)
                     print(card)
 
-                sets = self.find_sets()
-                if len(sets) == 0:
+                set = self.find_set()
+                if len(set) == 0:
                     print("No Sets Found")
                 else:
-                    for i in range(len(sets)):
-                        for card in sets[i]:
-                            x,y,w,h = cv2.boundingRect(card.contour)
-                            cv2.putText(frame, 6*i*" " + f"Set {i+1} ", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+                    for card in set:
+                        cv2.drawContours(frame, [card.contour], -1, (0,255,0), 5)
+                        x,y,w,h = cv2.boundingRect(card.contour)
+                        cv2.putText(frame, "Set", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+
             cv2.imshow("Game", frame)
 
             if key == ord('q'):
