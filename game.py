@@ -50,46 +50,67 @@ class Game:
                         return [self.cards[i], self.cards[j], card]
         return []
 
+    def get_results(self, frame):
+            results_frame = frame
+            scanner = Scanner(results_frame)
+
+            card_imgs = scanner.get_card_imgs()
+            card_contours = scanner.get_card_contours()[:len(card_imgs)]
+            self.cards = []
+
+            for i in range(len(card_imgs)):
+                card = Card(card_imgs[i],card_contours[i])
+                self.cards.append(card)
+                cv2.drawContours(results_frame, [card.contour], -1, (0,0,255), 5)
+                print(card)
+
+            set = self.find_set()
+            if len(set) == 0:
+                print("No Sets Found")
+            else:
+                for card in set:
+                    cv2.drawContours(results_frame, [card.contour], -1, (0,255,0), 5)
+                    x,y,w,h = cv2.boundingRect(card.contour)
+                    cv2.putText(results_frame, "Set", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+
+            return results_frame
+
     def run(self):
         if self.mode == 0:
+            # For live feed, have you make sure you have the right angle before making first scan
             video = cv2.VideoCapture(0)
-            frame = video.read()[1]
+            while True:
+                regular_frame = video.read()[1]
+                cv2.imshow("Testing", regular_frame)
+                if cv2.waitKey(60) & 0xFF == ord('r'):
+                    results_frame = self.get_results(regular_frame)
+                    break
         else:
-            frame = cv2.imread("cards/testing.jpg")
-
+            regular_frame = cv2.imread("cards/testing.jpg")
+            # Scan pre-took image immediately
+            results_frame = self.get_results(regular_frame)
+        
         while True:
-            key = cv2.waitKey(60) & 0xFF
-            if key == ord('r'):
-                if self.mode == 0:
-                    frame = video.read()[1]
-                else:
-                    frame = cv2.imread("cards/testing.jpg")
-                scanner = Scanner(frame)
+            cv2.imshow("Game", regular_frame)
+            key = cv2.waitKey(60) & 0xFF  
 
-                card_imgs = scanner.get_card_imgs()
-                card_contours = scanner.get_card_contours()[:len(card_imgs)]
-                self.cards = []
+            # Reload scan from current frame
+            if key == ord('r'): 
+                results_frame = self.get_results(regular_frame)
 
-                for i in range(len(card_imgs)):
-                    card = Card(card_imgs[i],card_contours[i])
-                    self.cards.append(card)
-                    cv2.drawContours(frame, [card.contour], -1, (0,0,255), 5)
-                    print(card)
-
-                set = self.find_set()
-                if len(set) == 0:
-                    print("No Sets Found")
-                else:
-                    for card in set:
-                        cv2.drawContours(frame, [card.contour], -1, (0,255,0), 5)
-                        x,y,w,h = cv2.boundingRect(card.contour)
-                        cv2.putText(frame, "Set", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
-
-            cv2.imshow("Game", frame)
+            # Show results, then get next frame
+            cv2.imshow("Results", results_frame)
+            if self.mode == 0:
+                regular_frame = video.read()[1]
+            else:
+                regular_frame = cv2.imread("cards/testing.jpg")
 
             if key == ord('q'):
                     break
+            
+    
+
 
 if __name__ == '__main__':
-    game = Game()
+    game = Game(0)
     game.run()

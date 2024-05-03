@@ -59,6 +59,7 @@ class Card:
             shape_contours[shape] = self.get_shape_contours(shape_img)[0]
 
         best_match = .2
+        # The most abnormal shape is diamond, so if no shape matches, assume diamond
         best_shape = "Diamond"
 
         for shape in shape_contours:
@@ -155,7 +156,6 @@ class Card:
         x = int(thresh.shape[1]/2 - w/2)
         cropped = thresh[y:y+h, x:x+w]
 
-
         # Counting black and white pixels then finding proportion of black
         unique_colors = np.unique(cropped.reshape(-1,1), axis=0)
         
@@ -173,11 +173,11 @@ class Card:
                 white_corner = self.card_img[0:100, 0:100]
                 mean_white = np.average(white_corner, axis=(0,1))
                 mean_fill = np.average(cropped, axis=(0,1))
-                print(self.color_difference(mean_white, mean_fill))
                 if self.color_difference(mean_white, mean_fill) > 20:
                     return "Striped"
                 else:
                     return "Empty"
+                # return "Empty"
             else:
                 return "Solid"
         else:
