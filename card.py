@@ -3,6 +3,11 @@ import numpy as np
 
 class Card:
     def __init__(self, card_img, contour):
+        """
+        Initializes card object with its image and outline, then find all the different parts of the card (color, fill, count, shape)
+        :param card_img: BGR image of the cropped card
+        :param contour: polygon outline of the card
+        """
         self.contour = contour
         self.img_size = card_img.shape
 
@@ -19,9 +24,9 @@ class Card:
 
     def get_shape_contours(self, card):
         """
-        INFO HERE
-        :param [parameters]:
-        :return: 
+        Detects all the contours in the card image, which should be all the shapes
+        :param card: image of the card
+        :return: list of contours which should the shape contours
         """
         gray = cv2.cvtColor(card,cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray,(1,1),1000)
@@ -47,9 +52,9 @@ class Card:
 
     def get_shape_type(self, image_shape):
         """
-        Takes in the cropped shape image and compares it to each of the three shapes
-        :param [image_shape]: 
-        :return: 
+        Takes in the cropped shape image and compares it to each of the three shapes using
+        :param image_shape: rectangular 500 x 300 image of the shape
+        :return: string of the best matched shape
         """
         shapes = ["Diamond", "Oval", "Wave"]
         shape_contours = {}
@@ -73,9 +78,9 @@ class Card:
 
     def compress (self, img):
         """
-        INFO HERE
-        :param [parameters]:
-        :return: 
+        Compresses an image into two seperate colors
+        :param img: BGR image that has generally has two distinct colors
+        :return: BGR image that only has two colors
         """
         # Start of code from: https://docs.opencv.org/3.4/d1/d5c/tutorial_py_kmeans_opencv.html
         Z = img.reshape((-1,3))
@@ -94,6 +99,12 @@ class Card:
         return res2
     
     def make_shape_img(self, og_image, shape_contour):
+        """
+        Crop orginal image of the card into a single image of the shape inside
+        :param og_image: a BGR copy of the original card image
+        :param shape_contour: contour that goes around one of the shapes in the card
+        :return: a 500 x 300 BGR image that is of just one of the shapes
+        """
         # Start of code from: https://jdhao.github.io/2019/02/23/crop_rotated_rectangle_opencv/
         # rotate img
         rect = cv2.minAreaRect(shape_contour)
@@ -128,6 +139,10 @@ class Card:
 
     
     def get_color(self):
+        """
+        Compares color ratios in the shape image and gives back best fit color for the shape
+        :return: String of the best fit color
+        """
         simple_shape = self.compress(self.shape_img)
         unique_colors = np.unique(simple_shape.reshape(-1,3), axis=0)
 
@@ -145,6 +160,10 @@ class Card:
 
         
     def get_fill(self):
+        """
+        Takes a square out of the middle of the shape image and distinguishes if the shape is solid, striped, or empty
+        :return: BGR image that only has two colors
+        """
         gray = cv2.cvtColor(self.shape_img,cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray,(1,1),1000)
         flag, thresh = cv2.threshold(blur, 120, 255, cv2.THRESH_OTSU)
@@ -177,13 +196,18 @@ class Card:
                     return "Striped"
                 else:
                     return "Empty"
-                # return "Empty"
             else:
                 return "Solid"
         else:
             return "Striped"
         
     def color_difference(self, color1, color2):
+        """
+        Get two colors and add up each color difference
+        :param color1: BGR Pixel in the form of a set
+        :param color2: BGR Pixel in the form of a set
+        :return: total difference between color1 and color2
+        """
         blue_diff = abs(color1[0] - color2[0])
         green_diff = abs(color1[1] - color2[1])
         red_diff = abs(color1[2] - color2[2])

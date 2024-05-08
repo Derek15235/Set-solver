@@ -3,10 +3,21 @@ from scanner import Scanner
 import cv2
 
 class Game:
-    def __init__(self, mode=0):
+    def __init__(self, mode=0, num_cards=12):
+        """
+        Initializes Game object and how the game should be played
+        :param mode: either 0 for live video feed or 1 to play game using the testing image
+        :param num_cards: amount of cards that the program scans for
+        """
         self.mode = mode
+        self.num_cards = num_cards
 
     def find_set(self):
+        """
+        Using the info of every single card that has been recognized on the board, find a single set. Each pair has only one other card
+        to make a set, so find all unique combinations of 2 cards and scan for that last one to complete the set.
+        :return: if a set is found, return a list of the three cards that make the set. If no set is found, return an empty list.
+        """
         for i in range(len(self.cards)):
             for j in range (i+1, len(self.cards)):
                 # Find needed shape
@@ -51,31 +62,40 @@ class Game:
         return []
 
     def get_results(self, frame):
-            results_frame = frame
-            scanner = Scanner(results_frame)
+        """
+        Scan a single frame and scan and outline all the cards found. Also display all the cards that make a set.
+        :param frame: a BGR image either from the live feed or from the testing image
+        :return: an editied image of the oringal frame with all the cards highlighted in red and the cards that make a set green
+        """
+        results_frame = frame
+        scanner = Scanner(results_frame)
 
-            card_imgs = scanner.get_card_imgs()
-            card_contours = scanner.get_card_contours()[:len(card_imgs)]
-            self.cards = []
+        card_imgs = scanner.get_card_imgs()
+        card_contours = scanner.get_card_contours()[:len(card_imgs)]
+        self.cards = []
 
-            for i in range(len(card_imgs)):
-                card = Card(card_imgs[i],card_contours[i])
-                self.cards.append(card)
-                cv2.drawContours(results_frame, [card.contour], -1, (0,0,255), 5)
-                print(card)
+        for i in range(len(card_imgs)):
+            card = Card(card_imgs[i],card_contours[i])
+            self.cards.append(card)
+            cv2.drawContours(results_frame, [card.contour], -1, (0,0,255), 5)
+            print(card)
 
-            set = self.find_set()
-            if len(set) == 0:
-                print("No Sets Found")
-            else:
-                for card in set:
-                    cv2.drawContours(results_frame, [card.contour], -1, (0,255,0), 5)
-                    x,y,w,h = cv2.boundingRect(card.contour)
-                    cv2.putText(results_frame, "Set", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+        set = self.find_set()
+        if len(set) == 0:
+            print("No Sets Found")
+        else:
+            for card in set:
+                cv2.drawContours(results_frame, [card.contour], -1, (0,255,0), 5)
+                x,y,w,h = cv2.boundingRect(card.contour)
+                cv2.putText(results_frame, "Set", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
 
-            return results_frame
+        return results_frame
 
     def run(self):
+        """
+        Run either the live feed or testing image, and if its a live feed, it runs a regular live feed without scanning to get the position right,
+        then after the users hits 'r', scan the image. If the user keeps pressing 'r,' it will reload, but if the user hits 'q,' the game will quit.
+        """
         if self.mode == 0:
             # For live feed, have you make sure you have the right angle before making first scan
             video = cv2.VideoCapture(0)
@@ -102,8 +122,6 @@ class Game:
             cv2.imshow("Results", results_frame)
             if self.mode == 0:
                 regular_frame = video.read()[1]
-            else:
-                regular_frame = cv2.imread("cards/testing.jpg")
 
             if key == ord('q'):
                     break
@@ -112,5 +130,5 @@ class Game:
 
 
 if __name__ == '__main__':
-    game = Game(0)
+    game = Game(1)
     game.run()
