@@ -105,13 +105,17 @@ class Game:
                 if cv2.waitKey(60) & 0xFF == ord('r'):
                     results_frame = self.get_results(regular_frame)
                     break
+                elif cv2.waitKey(60) & 0xFF == ord('q'):
+                    return
+            cv2.destroyAllWindows()
         else:
             regular_frame = cv2.imread("cards/testing.jpg")
             # Scan pre-took image immediately
             results_frame = self.get_results(regular_frame)
         
         while True:
-            cv2.imshow("Game", regular_frame)
+            if self.mode == 0:
+                cv2.imshow("Game", regular_frame)
             key = cv2.waitKey(60) & 0xFF  
 
             # Reload scan from current frame
@@ -124,11 +128,13 @@ class Game:
                 regular_frame = video.read()[1]
 
             if key == ord('q'):
-                    break
-            
+                break
+        video.release()
+        cv2.destroyAllWindows()
+
     
 
 
 if __name__ == '__main__':
-    game = Game(1)
+    game = Game(0)
     game.run()

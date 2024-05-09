@@ -32,9 +32,7 @@ class Scanner:
             peri = cv2.arcLength(contour, True)
             approximation = cv2.approxPolyDP(contour, .1 * peri, True)
             area = cv2.contourArea(approximation)
-            print(area)
             if len(approximation) == 4 and area > 20000:
-                print(cv2.contourArea(approximation))
                 approx.append(approximation)  
 
         return approx
